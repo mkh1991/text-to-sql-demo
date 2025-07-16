@@ -14,16 +14,7 @@ genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 # Initialize the Gemini GenerativeModel client
 # Use 'gemini-1.5-flash-latest' for the latest Flash model
 
-client = instructor.from_provider(model="google/gemini-2.0-flash")
-
-import instructor
-from pydantic import BaseModel
-
-
-class User(BaseModel):
-    name: str
-    age: int
-
+client = instructor.from_provider(model="google/gemini-2.5-flash")
 
 class SQLQuery(BaseModel):
     sql: str = Field(description="The generated SQL query")
@@ -83,6 +74,7 @@ def get_schema_info(conn):
     except Exception as e:
         return f"Error getting schema: {str(e)}"
 
+
 def generate_sql_query(question: str, schema_info: str) -> SQLQuery:
     """Generate SQL query using Gemini with Instructor"""
 
@@ -103,30 +95,61 @@ Example queries:
 
 Human question: {question}"""
 
-    try:
-        response = client.messages.create(
-            messages=[{"role": "user", "content": system_prompt}],
-            response_model=SQLQuery,
-        )
-        return response
-    except Exception as e:
-        print(e)
-        return SQLQuery(
-            sql="",
-            explanation=f"Error generating query: {str(e)}",
-            confidence=0.0,
-            tables_used=[]
-        )
+    def get_sql_query(system_prompt: str):
+        try:
+            response = client.messages.create(
+                messages=[{"role": "user", "content": system_prompt}],
+                response_model=SQLQuery,
+            )
+            return response
+        except Exception as e:
+            print(e)
+            return SQLQuery(
+                sql="",
+                explanation=f"Error generating query: {str(e)}",
+                confidence=0.0,
+                tables_used=[]
+            )
+
+    return get_sql_query(system_prompt)
 
 def execute_query(conn, sql: str) -> Dict[str, Any]:
+    def clean_sql(sql: str) -> str:
+        # Enhanced safety check
+        sql_upper = sql.upper().strip()
+
+        # Remove comments and normalize whitespace
+        sql_clean = ' '.join(sql_upper.split())
+
+        # Check for dangerous keywords
+        dangerous_keywords = [
+            'INSERT', 'UPDATE', 'DELETE', 'DROP', 'CREATE', 'ALTER',
+            'TRUNCATE', 'REPLACE', 'MERGE', 'EXEC', 'EXECUTE',
+            'PRAGMA', 'ATTACH', 'DETACH'
+        ]
+
+        # Allow WITH clause by checking if query starts with WITH or SELECT
+        if not (sql_clean.startswith('SELECT') or sql_clean.startswith('WITH')):
+            return {"success": False, "error": "Only SELECT queries (optionally with WITH clauses) are allowed", "data": None}
+
+        # Check for dangerous keywords in the query
+        for keyword in dangerous_keywords:
+            # Use word boundaries to avoid false positives (e.g. "SELECT" in "SELECTED")
+            if f' {keyword} ' in f' {sql_clean} ' or sql_clean.startswith(f'{keyword} '):
+                return {"success": False, "error": f"Query contains prohibited keyword: {keyword}", "data": None}
+
+        # Add LIMIT clause if not present
+        if 'LIMIT' not in sql_upper:
+            sql = f"{sql.rstrip(';')} LIMIT 1000"
+
+        return sql
+
     """Execute SQL query and return results"""
     try:
-        # Basic safety check
-        sql_upper = sql.upper().strip()
-        if not sql_upper.startswith('SELECT'):
-            return {"success": False, "error": "Only SELECT queries are allowed", "data": None}
-
+        sql = clean_sql(sql)
+        # Execute query after cleanup
         df = pd.read_sql_query(sql, conn)
+
         return {
             "success": True,
             "data": df,
