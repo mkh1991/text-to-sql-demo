@@ -42,7 +42,7 @@ class QueryonData(BaseModel):
     )
     explanation: str = Field(
         description="Explanation for the answer or for why the query is not "
-        "answerable for this dataset"
+        "answerable for this dataset. NEVER answer the query if it is not relevant to the dataset."
     )
 
 
@@ -153,7 +153,7 @@ def analyze_retrieved_data(
     df: pd.DataFrame, user_query: str = None, **kwargs
 ) -> QueryonData:
     if len(df) >= 20 or len(df.columns) > 5:
-        st.warning("Dataset may be too large to anal")
+        st.warning("Dataset may be too large to analyze")
     df_json_str: str = df.to_json(orient="records")
     if user_query is None:
         user_query = ""
@@ -440,7 +440,7 @@ def main():
             else:
                 st.write(
                     f"Unable to answer the query, explanation: "
-                    f"{result_query_on_data.answer}"
+                    f"{result_query_on_data.explanation}"
                 )
 
 
