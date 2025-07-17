@@ -12,8 +12,7 @@ from io import StringIO
 # Configure Gemini
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 # Initialize the Gemini GenerativeModel client
-# Use 'gemini-1.5-flash-latest' for the latest Flash model
-
+# Use 'gemini-2.5-flash-latest' for the latest Flash model
 client = instructor.from_provider(model="google/gemini-2.5-flash")
 
 class SQLQuery(BaseModel):
@@ -62,10 +61,10 @@ def get_schema_info(conn):
             schema_info += f"  - {col[1]} ({col[2]})\n"
 
         # Add sample data
-        cursor.execute("SELECT * FROM superstore LIMIT 3")
+        cursor.execute("SELECT * FROM superstore LIMIT 1")
         sample_data = cursor.fetchall()
 
-        schema_info += "\nSample Data (first 3 rows):\n"
+        schema_info += "\nSample Data (first 1 row):\n"
         for row in sample_data[:1]:  # Just show first row to keep prompt concise
             schema_info += f"  {dict(zip([col[1] for col in columns], row))}\n"
 
