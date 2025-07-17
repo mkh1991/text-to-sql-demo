@@ -269,6 +269,7 @@ def main():
                     else:
                         st.error(f"Query execution failed: {result['error']}")
             else:
+                print(sql_response)
                 st.error("Failed to generate SQL query")
 
 if __name__ == "__main__":
