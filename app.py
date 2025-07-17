@@ -432,8 +432,10 @@ def main():
             )
         if result_query_on_data is not None:
             if result_query_on_data.status:
-                st.subheader("Answer:")
+                st.markdown("#### Answer:")
                 st.write(result_query_on_data.answer)
+                st.markdown("#### Explanation:")
+                st.write(result_query_on_data.explanation)
                 st.session_state["result_query_on_data"] = result_query_on_data
             else:
                 st.write(
