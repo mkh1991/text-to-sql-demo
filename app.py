@@ -269,9 +269,9 @@ def main():
     st.subheader("Ask questions about the Superstore dataset in natural language!")
     st.markdown(
         "#### Workflow \n\n"
-        "- **Step 1** : Fetch data that answers your query \n\n"
-        "- **Step 2**: Ask a follow-up question on the fetched data, e.g. 'Give me "
-        "some key insights on the dataset'"
+        "- **Step 1** : The LLM fetches data that answers your query by converting it to SQL\n\n"
+        "- **Step 2**: The LLM answers a follow-up question on the fetched data, "
+        "e.g. 'Give me some key insights on the dataset'"
     )
 
     # Initialize database
