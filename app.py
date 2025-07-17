@@ -10,7 +10,7 @@ import requests
 from io import StringIO
 
 # Configure Gemini
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+genai.configure(api_key=st.secrets.get("GEMINI_API_KEY") or os.getenv("GEMINI_API_KEY"))
 # Initialize the Gemini GenerativeModel client
 # Use 'gemini-2.5-flash-latest' for the latest Flash model
 client = instructor.from_provider(model="google/gemini-2.5-flash")
