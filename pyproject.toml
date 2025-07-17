@@ -5,12 +5,15 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "black>=25.1.0",
     "google-genai>=1.25.0",
     "google-generativeai>=0.8.5",
     "instructor>=1.9.2",
     "ipython>=9.4.0",
     "jsonref>=1.1.0",
+    "loguru>=0.7.3",
     "pandas>=2.3.1",
     "pydantic>=2.11.7",
     "streamlit>=1.47.0",
+    "tabulate>=0.9.0",
 ]
