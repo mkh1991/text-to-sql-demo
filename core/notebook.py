@@ -58,7 +58,7 @@ def execute_cell(cell, generation_config):
         with st.spinner("Generating SQL query..."):
             sql_response = generate_sql_query(
                 cell["query"],
-                workspace_context,
+                schema_info=workspace_context,
                 generation_config=generation_config
             )
             cell["sql_response"] = sql_response

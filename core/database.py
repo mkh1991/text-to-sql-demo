@@ -4,7 +4,7 @@ from typing import Dict, Any, List
 from loguru import logger
 import streamlit as st
 
-def get_session_schema_info(conn):
+def get_session_schema_info(conn, current_cell_id: int = None, exclude_current_cell=True):
     """Get database schema information for the session including temp tables"""
     try:
         cursor = conn.cursor()
@@ -39,9 +39,10 @@ def get_session_schema_info(conn):
             for table_name in temp_tables:
                 # Extract cell ID from table name
                 cell_id = table_name.replace("cell_", "").replace("_results", "")
-                schema_info += f"**{table_name}** (from Cell {cell_id}):\n"
-                schema_info += format_table_info(cursor, table_name,
-                                                 include_sample=False, indent="  ")
+                if cell_id != str(current_cell_id):
+                    schema_info += f"**{table_name}** (from Cell {cell_id}):\n"
+                    schema_info += format_table_info(cursor, table_name,
+                                                     include_sample=False, indent="  ")
 
         return schema_info
 
@@ -290,7 +291,7 @@ def get_enhanced_workspace_context(cell_id: int=None) -> str:
     #             cell_id = table.get("cell_id", "?")
     #             context += f"- **{table['name']}** (Cell {cell_id} results: {table['row_count']} rows, {table['column_count']} columns)\n"
     #             context += f"  Columns: {', '.join(table['columns'])}\n\n"
-        context = get_session_schema_info(conn)
+        context = get_session_schema_info(conn, current_cell_id=cell_id)
         prev_cell_id_str = cell_id - 1 if cell_id else ""
         context += f"## Previous Cell ID: {prev_cell_id_str}\n"
         context += "## Query Examples:\n"
