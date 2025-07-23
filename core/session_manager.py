@@ -90,7 +90,7 @@ def setup_session_database(session_id):
         return None, None
 
 
-def cleanup_old_sessions(max_age_hours=24):
+def cleanup_old_sessions(max_age_seconds=60*1):
     """Clean up old session files"""
     try:
         sessions_dir = Path("sessions")
@@ -98,7 +98,6 @@ def cleanup_old_sessions(max_age_hours=24):
             return
 
         current_time = time.time()
-        max_age_seconds = max_age_hours * 3600
 
         cleaned_count = 0
         for db_file in sessions_dir.glob("session_*.db"):
@@ -115,13 +114,13 @@ def cleanup_old_sessions(max_age_hours=24):
         logger.error(f"Error cleaning up sessions: {e}")
 
 
-def initialize_session(max_age_hours=24):
+def initialize_session():
     """Initialize session with database and cleanup"""
     # Get or create session ID
     session_id = get_or_create_session_id()
 
     # Cleanup old sessions on startup
-    cleanup_old_sessions(max_age_hours=max_age_hours)
+    cleanup_old_sessions()
 
     # Initialize session database
     if "session_db_conn" not in st.session_state:
