@@ -7,13 +7,13 @@ from utils.helpers import setup_logging
 
 def main():
     """Main Streamlit application entry point"""
-    st.set_page_config(page_title="Data Analysis Notebook", layout="wide")
+    st.set_page_config(page_title="Data Analysis Notebook AI Agent", layout="wide")
 
     # Setup logging
     setup_logging()
 
     # App header
-    st.title("📓 Data Analysis Notebook")
+    st.title("📓Data Analysis Notebook AI Agent")
     st.subheader("Session-based data analysis with natural language!")
 
     # Initialize session (database, cleanup, etc.)

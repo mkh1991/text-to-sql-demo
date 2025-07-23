@@ -268,7 +268,9 @@ def cleanup_orphaned_temp_tables(conn, existing_cell_ids: List[int]):
         logger.error(f"Error cleaning up orphaned temp tables: {e}")
 
 
-def get_enhanced_workspace_context() -> str:
+def get_enhanced_workspace_context(cell_id=None) -> str:
+    if cell_id is None:
+        cell_id = ""
     """Get enhanced workspace context including all tables"""
     conn = st.session_state.session_db_conn
     try:
@@ -291,6 +293,7 @@ def get_enhanced_workspace_context() -> str:
     #             context += f"- **{table['name']}** (Cell {cell_id} results: {table['row_count']} rows, {table['column_count']} columns)\n"
     #             context += f"  Columns: {', '.join(table['columns'])}\n\n"
         context = get_session_schema_info(conn)
+        context += f"## Current Cell ID: {cell_id}\n"
         context += "## Query Examples:\n"
         context += "- Query original data: `SELECT * FROM superstore WHERE category = 'Technology'`\n"
         context += "- Reference previous results: `SELECT * FROM cell_1_results`\n"

@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 from loguru import logger
 from core.database import get_session_schema_info, execute_query, \
-    get_enhanced_workspace_context
+    get_enhanced_workspace_context, create_temp_table
 from core.llm_client import generate_sql_query
 from core.session_manager import reset_session, clear_session_data
 from utils.helpers import get_cell_status_emoji, format_row_count, truncate_text
@@ -52,7 +52,7 @@ def execute_cell(cell, generation_config):
 
     try:
         # Build workspace context
-        workspace_context = get_enhanced_workspace_context()
+        workspace_context = get_enhanced_workspace_context(cell_id=cell["id"])
         logger.info(f"Current workspace context: \n\n{workspace_context}")
 
         with st.spinner("Generating SQL query..."):
@@ -71,6 +71,21 @@ def execute_cell(cell, generation_config):
                 cell["execution_result"] = result
 
                 if result["success"]:
+                    if result["row_count"] > 0:
+                        temp_result = create_temp_table(
+                            st.session_state.session_db_conn,  # Database connection
+                            cell["id"],  # Cell ID (becomes cell_X_results)
+                            result["data"],  # DataFrame from query results
+                            description=cell["query"]  # Optional description
+                        )
+                        if temp_result["success"]:
+                            cell["temp_table_name"] = temp_result["table_name"]
+                            logger.info(
+                                f"Created temp table {temp_result['table_name']} for cell {cell['id']}")
+                            # Update schema info to include new temp table
+                            st.session_state.session_schema_info = get_session_schema_info(
+                                st.session_state.session_db_conn
+                            )
                     cell["status"] = "complete"
                     # TODO: Phase 2 - Create temp table from results
                     # create_temp_table(conn, f"cell_{cell['id']}_results", result["data"])
