@@ -4,7 +4,10 @@ from typing import Dict, Any, List
 from loguru import logger
 import streamlit as st
 
-def get_session_schema_info(conn, current_cell_id: int = None, exclude_current_cell=True):
+
+def get_session_schema_info(
+    conn, current_cell_id: int = None, exclude_current_cell=True
+):
     """Get database schema information for the session including temp tables"""
     try:
         cursor = conn.cursor()
@@ -30,8 +33,9 @@ def get_session_schema_info(conn, current_cell_id: int = None, exclude_current_c
         if original_tables:
             schema_info += "## Original Tables:\n"
             for table_name in original_tables:
-                schema_info += format_table_info(cursor, table_name,
-                                                 include_sample=True)
+                schema_info += format_table_info(
+                    cursor, table_name, include_sample=True
+                )
 
         # Show temp tables
         if temp_tables:
@@ -41,8 +45,9 @@ def get_session_schema_info(conn, current_cell_id: int = None, exclude_current_c
                 cell_id = table_name.replace("cell_", "").replace("_results", "")
                 if cell_id != str(current_cell_id):
                     schema_info += f"**{table_name}** (from Cell {cell_id}):\n"
-                    schema_info += format_table_info(cursor, table_name,
-                                                     include_sample=False, indent="  ")
+                    schema_info += format_table_info(
+                        cursor, table_name, include_sample=False, indent="  "
+                    )
 
         return schema_info
 
@@ -50,8 +55,9 @@ def get_session_schema_info(conn, current_cell_id: int = None, exclude_current_c
         return f"Error getting schema: {str(e)}"
 
 
-def format_table_info(cursor, table_name: str, include_sample: bool = False,
-                      indent: str = "") -> str:
+def format_table_info(
+    cursor, table_name: str, include_sample: bool = False, indent: str = ""
+) -> str:
     """Format table information for schema display"""
     info = f"Table Name: {table_name}\n"
 
@@ -90,18 +96,31 @@ def execute_query(conn, sql: str) -> Dict[str, Any]:
         sql_clean = " ".join(sql_upper.split())
 
         dangerous_keywords = [
-            "INSERT", "UPDATE", "DELETE", "DROP", "CREATE", "ALTER",
-            "TRUNCATE", "REPLACE", "MERGE", "EXEC", "EXECUTE",
-            "PRAGMA", "ATTACH", "DETACH"
+            "INSERT",
+            "UPDATE",
+            "DELETE",
+            "DROP",
+            "CREATE",
+            "ALTER",
+            "TRUNCATE",
+            "REPLACE",
+            "MERGE",
+            "EXEC",
+            "EXECUTE",
+            "PRAGMA",
+            "ATTACH",
+            "DETACH",
         ]
 
         if not (sql_clean.startswith("SELECT") or sql_clean.startswith("WITH")):
             raise Exception(
-                "Only SELECT queries (optionally with WITH clauses) are allowed")
+                "Only SELECT queries (optionally with WITH clauses) are allowed"
+            )
 
         for keyword in dangerous_keywords:
             if f" {keyword} " in f" {sql_clean} " or sql_clean.startswith(
-                    f"{keyword} "):
+                f"{keyword} "
+            ):
                 raise Exception(f"Query contains prohibited keyword: {keyword}")
 
         if "LIMIT" not in sql_upper:
@@ -118,8 +137,9 @@ def execute_query(conn, sql: str) -> Dict[str, Any]:
         return {"success": False, "error": str(e), "data": None, "row_count": 0}
 
 
-def create_temp_table(conn, cell_id: int, df: pd.DataFrame, description: str = None) -> \
-Dict[str, Any]:
+def create_temp_table(
+    conn, cell_id: int, df: pd.DataFrame, description: str = None
+) -> Dict[str, Any]:
     """Create a temporary table from DataFrame results"""
     table_name = f"cell_{cell_id}_results"
 
@@ -129,13 +149,14 @@ Dict[str, Any]:
 
         # Log the creation
         logger.info(
-            f"Created temp table {table_name} with {len(df)} rows, {len(df.columns)} columns")
+            f"Created temp table {table_name} with {len(df)} rows, {len(df.columns)} columns"
+        )
 
         return {
             "success": True,
             "table_name": table_name,
             "row_count": len(df),
-            "column_count": len(df.columns)
+            "column_count": len(df.columns),
         }
     except Exception as e:
         logger.error(f"Error creating temp table {table_name}: {e}")
@@ -169,7 +190,7 @@ def temp_table_exists(conn, cell_id: int) -> bool:
         cursor = conn.cursor()
         cursor.execute(
             "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
-            (table_name,)
+            (table_name,),
         )
         return cursor.fetchone() is not None
     except Exception as e:
@@ -185,7 +206,7 @@ def get_table_info(conn, table_name: str):
         # Check if table exists
         cursor.execute(
             "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
-            (table_name,)
+            (table_name,),
         )
         if not cursor.fetchone():
             return {"exists": False}
@@ -202,7 +223,7 @@ def get_table_info(conn, table_name: str):
             "exists": True,
             "columns": [{"name": col[1], "type": col[2]} for col in columns],
             "column_names": [col[1] for col in columns],
-            "row_count": row_count
+            "row_count": row_count,
         }
 
     except Exception as e:
@@ -220,7 +241,7 @@ def list_all_tables(conn) -> Dict[str, Any]:
         tables_info = {
             "original_tables": [],
             "temp_tables": [],
-            "total_count": len(table_names)
+            "total_count": len(table_names),
         }
 
         for table_name in table_names:
@@ -229,7 +250,7 @@ def list_all_tables(conn) -> Dict[str, Any]:
                 "name": table_name,
                 "row_count": table_info.get("row_count", 0),
                 "column_count": len(table_info.get("columns", [])),
-                "columns": table_info.get("column_names", [])
+                "columns": table_info.get("column_names", []),
             }
 
             if table_name.startswith("cell_") and table_name.endswith("_results"):
@@ -269,28 +290,28 @@ def cleanup_orphaned_temp_tables(conn, existing_cell_ids: List[int]):
         logger.error(f"Error cleaning up orphaned temp tables: {e}")
 
 
-def get_enhanced_workspace_context(cell_id: int=None) -> str:
+def get_enhanced_workspace_context(cell_id: int = None) -> str:
     """Get enhanced workspace context including all tables"""
     conn = st.session_state.session_db_conn
     try:
-    #     tables_info = list_all_tables(conn)
-    #
-    #     context = "## Available Tables for Querying:\n\n"
-    #
-    #     # Original tables
-    #     if tables_info.get("original_tables"):
-    #         context += "### Original Database Tables:\n"
-    #         for table in tables_info["original_tables"]:
-    #             context += f"- **{table['name']}** ({table['row_count']} rows, {table['column_count']} columns)\n"
-    #             context += f"  Columns: {', '.join(table['columns'])}\n\n"
-    #
-    #     # Temp tables from previous cells
-    #     if tables_info.get("temp_tables"):
-    #         context += "### Computed Datasets (Available for JOIN/reference):\n"
-    #         for table in tables_info["temp_tables"]:
-    #             cell_id = table.get("cell_id", "?")
-    #             context += f"- **{table['name']}** (Cell {cell_id} results: {table['row_count']} rows, {table['column_count']} columns)\n"
-    #             context += f"  Columns: {', '.join(table['columns'])}\n\n"
+        #     tables_info = list_all_tables(conn)
+        #
+        #     context = "## Available Tables for Querying:\n\n"
+        #
+        #     # Original tables
+        #     if tables_info.get("original_tables"):
+        #         context += "### Original Database Tables:\n"
+        #         for table in tables_info["original_tables"]:
+        #             context += f"- **{table['name']}** ({table['row_count']} rows, {table['column_count']} columns)\n"
+        #             context += f"  Columns: {', '.join(table['columns'])}\n\n"
+        #
+        #     # Temp tables from previous cells
+        #     if tables_info.get("temp_tables"):
+        #         context += "### Computed Datasets (Available for JOIN/reference):\n"
+        #         for table in tables_info["temp_tables"]:
+        #             cell_id = table.get("cell_id", "?")
+        #             context += f"- **{table['name']}** (Cell {cell_id} results: {table['row_count']} rows, {table['column_count']} columns)\n"
+        #             context += f"  Columns: {', '.join(table['columns'])}\n\n"
         context = get_session_schema_info(conn, current_cell_id=cell_id)
         prev_cell_id_str = cell_id - 1 if cell_id else ""
         context += f"## Previous Cell ID: {prev_cell_id_str}\n"

@@ -7,6 +7,7 @@ from pathlib import Path
 import time
 from loguru import logger
 import os
+import config
 
 
 PARSE_DATES = ["Order Date", "Ship Date"]
@@ -16,12 +17,36 @@ def get_or_create_session_id():
     """Get or create a unique session ID"""
     if "session_id" not in st.session_state:
         st.session_state.session_id = str(uuid.uuid4())[
-                                      :8]  # Short UUID for readability
+            :8
+        ]  # Short UUID for readability
     return st.session_state.session_id
 
 
-def setup_session_database(session_id):
+def setup_session_database(session_id, dataset_filename="superstore.csv"):
     """Setup session-specific database with original data"""
+    def fetch_superstore_data() -> pd.DataFrame | None:
+        """Download superstore dataset and load as a csv"""
+        try:
+            # Download the CSV file
+            response = requests.get(url)
+            response.raise_for_status()  # Raise an exception for bad status codes
+
+            # Save to local file
+            with open(csv_file_path, "w", encoding="utf-8") as f:
+                f.write(response.text)
+
+            # Read from the saved file
+            df = pd.read_csv(csv_file_path, parse_dates=PARSE_DATES)
+            logger.success("CSV file downloaded and saved successfully!")
+            return df
+
+        except requests.exceptions.RequestException as e:
+            st.error(f"Error downloading data: {e}")
+            return None
+        except Exception as e:
+            st.error(f"Error saving or reading file: {e}")
+            return None
+
     try:
         # Create sessions directory if it doesn't exist
         sessions_dir = Path("sessions")
@@ -40,32 +65,14 @@ def setup_session_database(session_id):
         logger.info(f"Creating new session DB: {session_db_path}")
 
         # File path for the CSV
-        csv_file_path = "superstore.csv"
+        csv_file_path = config.DATA_DIR / dataset_filename
         url = "https://raw.githubusercontent.com/leonism/sample-superstore/master/data/superstore.csv"
 
         # Check if CSV file already exists locally
         if os.path.exists(csv_file_path):
             df = pd.read_csv(csv_file_path, parse_dates=PARSE_DATES)
         else:
-            try:
-                # Download the CSV file
-                response = requests.get(url)
-                response.raise_for_status()  # Raise an exception for bad status codes
-
-                # Save to local file
-                with open(csv_file_path, 'w', encoding='utf-8') as f:
-                    f.write(response.text)
-
-                # Read from the saved file
-                df = pd.read_csv(csv_file_path, parse_dates=PARSE_DATES)
-                st.write("CSV file downloaded and saved successfully!")
-
-            except requests.exceptions.RequestException as e:
-                st.error(f"Error downloading data: {e}")
-                return None
-            except Exception as e:
-                st.error(f"Error saving or reading file: {e}")
-                return None
+            df = fetch_superstore_data()
 
         st.write(df.head())
 
@@ -84,7 +91,7 @@ def setup_session_database(session_id):
         return None, None
 
 
-def cleanup_old_sessions(current_session_id, max_age_seconds=60*1):
+def cleanup_old_sessions(current_session_id, max_age_seconds=60 * 1):
     """Clean up old session files"""
     try:
         sessions_dir = Path("sessions")
@@ -96,7 +103,10 @@ def cleanup_old_sessions(current_session_id, max_age_seconds=60*1):
         cleaned_count = 0
         for db_file in sessions_dir.glob("session_*.db"):
             file_age = current_time - db_file.stat().st_mtime
-            if file_age > max_age_seconds and str(current_session_id) not in db_file.name:
+            if (
+                file_age > max_age_seconds
+                and str(current_session_id) not in db_file.name
+            ):
                 db_file.unlink()
                 cleaned_count += 1
                 logger.info(f"Cleaned up old session: {db_file}")
@@ -123,7 +133,7 @@ def initialize_session():
             if conn:
                 st.session_state.session_db_conn = conn
                 st.session_state.session_db_path = db_path
-                #st.success(f"Session workspace ready! Session ID: {session_id}")
+                # st.success(f"Session workspace ready! Session ID: {session_id}")
             else:
                 st.error("Failed to setup session workspace")
                 return False
@@ -141,9 +151,9 @@ def reset_session():
 def clear_session_data():
     """Clear all session data and delete session file"""
     # Close connection and delete session file
-    if hasattr(st.session_state, 'session_db_conn'):
+    if hasattr(st.session_state, "session_db_conn"):
         st.session_state.session_db_conn.close()
-    if hasattr(st.session_state, 'session_db_path'):
+    if hasattr(st.session_state, "session_db_path"):
         Path(st.session_state.session_db_path).unlink(missing_ok=True)
     # Clear session state
     for key in list(st.session_state.keys()):

@@ -18,8 +18,9 @@ genai.configure(api_key=api_key)
 client = instructor.from_provider(model="google/gemini-2.5-flash")
 
 
-def generate_sql_query(question: str, schema_info: str,
-                       generation_config=None) -> SQLQuery:
+def generate_sql_query(
+    question: str, schema_info: str, generation_config=None
+) -> SQLQuery:
     """Generate SQL query using Gemini with Instructor"""
 
     system_prompt = f"""You are a SQL expert. Convert natural language questions to SQL queries.
@@ -68,8 +69,9 @@ Human question: {question}"""
     return SQLQuery(**raw_completion)
 
 
-def analyze_retrieved_data(df: pd.DataFrame, user_query: str = None,
-                           **kwargs) -> QueryonData:
+def analyze_retrieved_data(
+    df: pd.DataFrame, user_query: str = None, **kwargs
+) -> QueryonData:
     """Analyze retrieved data using LLM"""
     if len(df) >= 20 or len(df.columns) > 5:
         st.warning("Dataset may be too large to analyze")
@@ -113,7 +115,7 @@ the query is not relevant to the dataset.
             response = QueryonData(
                 status=False,
                 answer="Error occurred while attempting to answer query on the dataset",
-                explanation=f"Error: {str(e)}"
+                explanation=f"Error: {str(e)}",
             ).model_dump()
             return response
 
@@ -158,5 +160,5 @@ def get_llm_client_info():
         "model": "google/gemini-2.5-flash",
         "provider": "google",
         "client_type": "instructor",
-        "api_key_configured": bool(api_key)
+        "api_key_configured": bool(api_key),
     }

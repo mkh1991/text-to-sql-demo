@@ -10,3 +10,12 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Local logs
+logs/
+
+# Data
+data/
+
+# Other local files
+*.DS_Store

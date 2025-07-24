@@ -1,8 +1,12 @@
 import streamlit as st
 import pandas as pd
 from loguru import logger
-from core.database import get_session_schema_info, execute_query, \
-    get_enhanced_workspace_context, create_temp_table
+from core.database import (
+    get_session_schema_info,
+    execute_query,
+    get_enhanced_workspace_context,
+    create_temp_table,
+)
 from core.llm_client import generate_sql_query
 from core.session_manager import reset_session, clear_session_data
 from utils.helpers import get_cell_status_emoji, format_row_count, truncate_text
@@ -25,7 +29,7 @@ def add_new_cell():
         "sql_response": None,
         "execution_result": None,
         "analysis_result": None,
-        "status": "empty"  # empty, running, complete, error
+        "status": "empty",  # empty, running, complete, error
     }
     st.session_state.notebook_cells.append(new_cell)
     return new_cell
@@ -35,8 +39,7 @@ def delete_cell(cell_id):
     """Delete a cell by ID"""
     # Find and remove the cell
     st.session_state.notebook_cells = [
-        cell for cell in st.session_state.notebook_cells
-        if cell["id"] != cell_id
+        cell for cell in st.session_state.notebook_cells if cell["id"] != cell_id
     ]
 
     # TODO: In Phase 2, we'll also need to:
@@ -59,15 +62,16 @@ def execute_cell(cell, generation_config):
             sql_response = generate_sql_query(
                 cell["query"],
                 schema_info=workspace_context,
-                generation_config=generation_config
+                generation_config=generation_config,
             )
             cell["sql_response"] = sql_response
 
         if sql_response.sql:
             with st.spinner("Executing query..."):
                 # Use session database connection
-                result = execute_query(st.session_state.session_db_conn,
-                                       sql_response.sql)
+                result = execute_query(
+                    st.session_state.session_db_conn, sql_response.sql
+                )
                 cell["execution_result"] = result
 
                 if result["success"]:
@@ -76,15 +80,18 @@ def execute_cell(cell, generation_config):
                             st.session_state.session_db_conn,  # Database connection
                             cell["id"],  # Cell ID (becomes cell_X_results)
                             result["data"],  # DataFrame from query results
-                            description=cell["query"]  # Optional description
+                            description=cell["query"],  # Optional description
                         )
                         if temp_result["success"]:
                             cell["temp_table_name"] = temp_result["table_name"]
                             logger.info(
-                                f"Created temp table {temp_result['table_name']} for cell {cell['id']}")
+                                f"Created temp table {temp_result['table_name']} for cell {cell['id']}"
+                            )
                             # Update schema info to include new temp table
-                            st.session_state.session_schema_info = get_session_schema_info(
-                                st.session_state.session_db_conn
+                            st.session_state.session_schema_info = (
+                                get_session_schema_info(
+                                    st.session_state.session_db_conn
+                                )
                             )
                     cell["status"] = "complete"
                     # TODO: Phase 2 - Create temp table from results
@@ -100,6 +107,7 @@ def execute_cell(cell, generation_config):
 
 
 # UI RENDERING FUNCTIONS
+
 
 def render_sidebar():
     """Render the complete sidebar"""
@@ -131,7 +139,8 @@ def render_workspace_datasets():
         return
 
     completed_cells = [
-        cell for cell in st.session_state.notebook_cells
+        cell
+        for cell in st.session_state.notebook_cells
         if cell["execution_result"] and cell["execution_result"]["success"]
     ]
 
@@ -142,8 +151,9 @@ def render_workspace_datasets():
 
     for cell in completed_cells:
         df = cell["execution_result"]["data"]
-        with st.expander(f"Cell {cell['id']} ({format_row_count(len(df))} rows)",
-                         expanded=False):
+        with st.expander(
+            f"Cell {cell['id']} ({format_row_count(len(df))} rows)", expanded=False
+        ):
             st.write(f"**Query:** {truncate_text(cell['query'], 50)}")
             st.write(f"**Columns:** {', '.join(df.columns.tolist())}")
             st.dataframe(df.head(3), use_container_width=True)
@@ -176,7 +186,7 @@ def render_llm_settings():
             min_value=0.0,
             max_value=2.0,
             value=0.1,
-            help="Lower value means more deterministic outputs"
+            help="Lower value means more deterministic outputs",
         )
         generation_config["temperature"] = temperature
 
@@ -204,9 +214,8 @@ def render_cell(cell, cell_index, generation_config):
             elif cell["status"] == "error":
                 st.error("❌ Error")
         with col_header3:
-            if st.button("🗑️", key=f"delete_cell_{cell['id']}",
-                         help="Delete this cell"):
-                delete_cell(cell['id'])
+            if st.button("🗑️", key=f"delete_cell_{cell['id']}", help="Delete this cell"):
+                delete_cell(cell["id"])
                 st.rerun()
 
         # Query input
@@ -215,7 +224,7 @@ def render_cell(cell, cell_index, generation_config):
             f"Query for Cell {cell['id']}:",
             value=cell["query"],
             key=f"{cell_key}_input",
-            placeholder="Ask a question about the data or reference previous cells..."
+            placeholder="Ask a question about the data or reference previous cells...",
         )
 
         # Update cell query if changed
@@ -229,7 +238,7 @@ def render_cell(cell, cell_index, generation_config):
                 "▶️ Execute",
                 key=f"{cell_key}_execute",
                 type="primary" if cell["status"] == "empty" else "secondary",
-                disabled=(cell["status"] == "running")
+                disabled=(cell["status"] == "running"),
             )
 
         # Execute cell
@@ -258,7 +267,8 @@ def render_cell_results(cell):
         if cell["execution_result"]["success"]:
             df = cell["execution_result"]["data"]
             st.write(
-                f"**Results:** {format_row_count(cell['execution_result']['row_count'])} rows")
+                f"**Results:** {format_row_count(cell['execution_result']['row_count'])} rows"
+            )
 
             if cell["execution_result"]["row_count"] > 0:
                 st.dataframe(df, use_container_width=True)
@@ -296,8 +306,9 @@ def render_notebook_interface():
 
     # Show database preview option
     if st.checkbox("Show original dataset preview", False):
-        preview_df = pd.read_sql("SELECT * FROM superstore LIMIT 5;",
-                                 st.session_state.session_db_conn)
+        preview_df = pd.read_sql(
+            "SELECT * FROM superstore LIMIT 5;", st.session_state.session_db_conn
+        )
         st.dataframe(preview_df, use_container_width=True)
 
     # Main notebook interface

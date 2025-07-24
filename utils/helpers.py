@@ -12,7 +12,7 @@ def setup_logging():
     logger.add(
         sys.stdout,
         format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
-        level="INFO"
+        level="INFO",
     )
 
     # Add file logger for debugging (optional)
@@ -21,7 +21,7 @@ def setup_logging():
         rotation="1 day",
         retention="7 days",
         level="DEBUG",
-        format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function}:{line} - {message}"
+        format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function}:{line} - {message}",
     )
 
 
@@ -50,12 +50,7 @@ def truncate_text(text, max_length=100):
 
 def get_cell_status_emoji(status):
     """Get emoji for cell status"""
-    status_map = {
-        "empty": "⚪",
-        "running": "🔄",
-        "complete": "✅",
-        "error": "❌"
-    }
+    status_map = {"empty": "⚪", "running": "🔄", "complete": "✅", "error": "❌"}
     return status_map.get(status, "⚪")
 
 
@@ -76,7 +71,7 @@ def validate_session_state():
         "session_db_conn",
         "session_db_path",
         "notebook_cells",
-        "cell_counter"
+        "cell_counter",
     ]
 
     missing_keys = [key for key in required_keys if key not in st.session_state]
