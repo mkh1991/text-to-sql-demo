@@ -45,10 +45,8 @@ def setup_session_database(session_id):
 
         # Check if CSV file already exists locally
         if os.path.exists(csv_file_path):
-            st.write("Loading data from local CSV file...")
             df = pd.read_csv(csv_file_path, parse_dates=PARSE_DATES)
         else:
-            st.write("Downloading CSV file...")
             try:
                 # Download the CSV file
                 response = requests.get(url)
@@ -63,7 +61,7 @@ def setup_session_database(session_id):
                 st.write("CSV file downloaded and saved successfully!")
 
             except requests.exceptions.RequestException as e:
-                st.error(f"Error downloading file: {e}")
+                st.error(f"Error downloading data: {e}")
                 return None
             except Exception as e:
                 st.error(f"Error saving or reading file: {e}")
@@ -71,17 +69,13 @@ def setup_session_database(session_id):
 
         st.write(df.head())
 
-        # # Clean column names
-        # df.columns = [
-        #     col.replace(" ", "_").replace("-", "_").lower() for col in df.columns
-        # ]
-
         # Create session SQLite database
         conn = sqlite3.connect(str(session_db_path), check_same_thread=False)
 
         # Load original data into session database
         df.to_sql("superstore", conn, if_exists="replace", index=False)
 
+        st.success("Loaded data successfully")
         logger.info(f"Session database created successfully: {session_db_path}")
         return conn, session_db_path
 
@@ -129,7 +123,7 @@ def initialize_session():
             if conn:
                 st.session_state.session_db_conn = conn
                 st.session_state.session_db_path = db_path
-                st.success(f"Session workspace ready! Session ID: {session_id}")
+                #st.success(f"Session workspace ready! Session ID: {session_id}")
             else:
                 st.error("Failed to setup session workspace")
                 return False
